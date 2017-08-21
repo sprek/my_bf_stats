@@ -46,7 +46,7 @@ def get_stats(user, db):
     rounds_played=remove_commas(soup.find_all(attrs={"data-stat" : "stats.numRounds|nf"})[0].get_text())
     kills=remove_commas(soup.find_all(attrs={"data-stat" : "stats.kills|nf"})[0].get_text())
     deaths=remove_commas(soup.find_all(attrs={"data-stat" : "stats.deaths|nf"})[0].get_text())
-    time_played=convert_time_to_int(soup.find_all(attrs={"data-stat" : "stats.timePlayedAll|time"})[0].get_text())
+    time_played=convert_time_to_int(soup.find_all(attrs={"data-stat" : "stats.timePlayed|time"})[0].get_text())
     mvp=remove_commas(soup.find_all(attrs={"data-stat" : "stats.flagDefend|nf"})[0].get_text())
     ace_squad=remove_commas(soup.find_all(attrs={"data-stat" : "stats.aceSquad|nf"})[0].get_text())
     longest_headshot=remove_commas(soup.find_all(attrs={"data-stat" : "stats.longestHeadshot|nf"})[0].get_text())
@@ -129,6 +129,33 @@ def get_time_str_from_int(time_int):
         new_str = time_str[0:-4] + ':' + new_str
     return new_str
 
+def get_timedelta_from_time_str(time_str):
+    vals=time_str.split(":")
+    if len(vals)==3:
+        td=dt.timedelta(seconds=(int(vals[2]) + int(vals[1])*60 + int(vals[0])*60*60))
+    elif len(vals)==2:
+        td=dt.timedelta(seconds=(int(vals[2]) + int(vals[1])*60))
+    elif len(vals)==1:
+        td=dt.timedelta(seconds=(int(vals[2])))
+    return td
+
+def get_time_str_from_timedelta(td):
+    hours, remainder = divmod(td.seconds, 3600)
+    minutes, seconds = divmod(remainder, 60)
+    return_time=""
+    if seconds > 0:
+        return_time='{0:02d}'.format(seconds)
+    if minutes > 0:
+        return_time='{0:02d}'.format(minutes) + ":" + return_time
+    if hours > 0:
+        return_time=str(hours) + ":" + return_time
+    return return_time
+
+def subtract_times(time_int_a, time_int_b):
+    diff_time=get_timedelta_from_time_str(get_time_str_from_int(time_int_a)) - \
+               get_timedelta_from_time_str(get_time_str_from_int(time_int_b))
+    return get_time_str_from_timedelta (diff_time)
+
 def calculate_stats(db):
     users = sorted(stats.get_users(db))
     last_sun = get_last_sunday()
@@ -138,18 +165,22 @@ def calculate_stats(db):
         last_stat=stats.get_last_stat_before_date(user, last_sun, db)
         if not all_stats:
             # don't have an entry for this player this week
+            print ("Don't have entry for " + user + " this week")
             tmp_list += [0]*13
             data.append(tmp_list)
             continue
         if not last_stat:
-            # initialize to all 0's
-            #last_stat=stats.Stats(user=user)
+            # don't have an entry for last week
+            # use the first stat of this week
             last_stat=all_stats[0]
         tmp_list=[]
         tmp_list.append(user)
         
         rounds=all_stats[-1].rounds_played - last_stat.rounds_played
-        time_played = all_stats[-1].time_played - last_stat.time_played
+        if all_stats[-1].time_played == last_stat.time_played:
+            time_played="0"
+        else:
+            time_played = subtract_times(all_stats[-1].time_played, last_stat.time_played)
         score=all_stats[-1].score - last_stat.score
         general_score=all_stats[-1].general_score - last_stat.general_score
         wins=all_stats[-1].wins - last_stat.wins
@@ -159,7 +190,10 @@ def calculate_stats(db):
         mvp=all_stats[-1].mvp - last_stat.mvp
         ace=all_stats[-1].ace_squad - last_stat.ace_squad
         flags=all_stats[-1].flag_caps - last_stat.flag_caps
-        time_min=get_minutes_in_time(time_played)
+        if time_played=="0":
+            time_min=0
+        else:
+            time_min=get_minutes_in_time(convert_time_to_int(time_played))
         if time_min == 0:
             score_per_min=0
             general_score_per_min=0
