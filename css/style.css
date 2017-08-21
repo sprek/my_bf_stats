@@ -1,0 +1,14 @@
+.container {
+  width: 80%;
+  margin: 15px auto;
+}
+
+td.highlight {
+    background-color: #e0e0e0 !important;
+}
+
+td {
+  white-space: nowrap;
+}
+
+
