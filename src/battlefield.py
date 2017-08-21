@@ -1,6 +1,7 @@
 import bf_controller, os, sqlite3
 from database import stats, create_db
 import pandas as pd
+import logging, sys
 import time
 
 USERS=['sprekk','buttDecimator', "Chairman%20OSU", "BroNCHRIST", "Cyanider",
@@ -11,22 +12,47 @@ START_HTML="start_html.html"
 
 OUT_HTML="../stats.html"
 
-def get_update(db):
-    #got_update=False
-    #for i,user in enumerate(USERS):
-    #    cur_stat=bf_controller.get_stats(user, get_db())
-    #    #stats.print_stat(cur_stat)
-    #    latest_stat=stats.get_latest_stat_for_user(user, db)
-    #    if not latest_stat or latest_stat.score != cur_stat.score:
-    #        print ("Getting update for user: " + user)
-    #        # there's been an update
-    #        stats.insert_stat_into_db(cur_stat, db)
-    #        got_update = True
-    #        if i != len(USERS)-1:
-    #            # put a 1 sec delay between website requests
-    #            time.sleep(1)
-    generate_webpage(db)
+GENERATE_WITHOUT_SCRAPE=False
 
+def get_usage():
+    return "Usage: battlefield.py [-g]"
+
+def get_help():
+    msg = get_usage() + "\n"
+    msg += """
+Options:
+   -g        Generates the battlefield web page without scraping
+"""
+
+def get_options():
+    global GENERATE_WITHOUT_SCRAPE
+    if len(sys.argv) > 1:
+        # check that the only option is -g
+        if any([x not in ['-g'] for x in sys.argv[1:]]):
+            print(get_usage())
+            sys.exit(1)
+    if '-g' in sys.argv[1:]:
+        GENERATE_WITHOUT_SCRAPE = True
+
+def get_update(db):
+    if not GENERATE_WITHOUT_SCRAPE:
+        for i,user in enumerate(USERS):
+            cur_stat=bf_controller.get_stats(user, get_db())
+            #stats.print_stat(cur_stat)
+            latest_stat=stats.get_latest_stat_for_user(user, db)
+            if not latest_stat:
+                logging.info("No entry for user: " + user + ". Creating one now")
+            else:
+                print ("SCORES: " + str(cur_stat.score) + " , " + str(latest_stat.score))
+            if not latest_stat or (latest_stat.score != cur_stat.score):
+                logging.info("Getting update for user: " + user)
+                # there's been an update
+                stats.insert_stat_into_db(cur_stat, db)
+                got_update = True
+                if i != len(USERS)-1:
+                    # put a 1 sec delay between website requests
+                    time.sleep(1)
+    generate_webpage(db)
 
 def generate_webpage(db):
     webpage=""
@@ -133,6 +159,18 @@ $('#example2').DataTable({
         #for col in row:
         #    webpage += row['score']
 
+def setup_logging():
+    log_format='%(asctime)s [%(levelname)-5.5s] %(message)s'
+    date_format='%Y-%m-%d %H:%M:%S'
+    logging.basicConfig(filename='bfstats.log',
+                        format=log_format,
+                        datefmt=date_format,
+                        level=logging.INFO)
+
+    ch = logging.StreamHandler(sys.stdout)
+    ch.setLevel(logging.DEBUG)
+    ch.setFormatter(logging.Formatter(log_format))
+    logging.getLogger().addHandler(ch)
 
 def get_db():
     if not os.path.isfile(DATABASE):
@@ -143,5 +181,7 @@ def get_db():
     return db
 
 if __name__ == "__main__":
+    setup_logging()
+    get_options()
     get_update(get_db())
-    #print ("MAIN")
+    
