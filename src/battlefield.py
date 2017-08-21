@@ -42,8 +42,6 @@ def get_update(db):
             latest_stat=stats.get_latest_stat_for_user(user, db)
             if not latest_stat:
                 logging.info("No entry for user: " + user + ". Creating one now")
-            else:
-                print ("SCORES: " + str(cur_stat.score) + " , " + str(latest_stat.score))
             if not latest_stat or (latest_stat.score != cur_stat.score):
                 logging.info("Getting update for user: " + user)
                 # there's been an update
