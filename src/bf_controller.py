@@ -219,7 +219,7 @@ def calculate_stats(db):
         general_score_per_min=general_score / float(time_min)
         kills_per_min=kills / float(time_min)
         flags_capped_per_min=flags / float(time_min)
-        kills_per_round=kills/float(rounds)
+        kills_per_round=kills/float(max(rounds,1))
         win_loss=wins / float(max(losses,1))
         kill_death=kills / float(max(deaths,1))
         
