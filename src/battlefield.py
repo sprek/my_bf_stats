@@ -145,11 +145,10 @@ $('#example2').DataTable({
         webpage += "<td>" + str(row.flag_caps) + "</td>\n"
         webpage += "</tr>\n"
     webpage += "</tbody>\n</table>\n"
-    
-    webpage += "</div>"
     webpage += """
-    <link rel="stylesheet" type="text/css" href="js/DataTables/datatables.min.css"/>
-    <script type="text/javascript" src="js/DataTables/datatables.js"></script>
+</div>
+    <link rel="stylesheet" type="text/css" href="static/js/DataTables/datatables.min.css"/>
+    <script type="text/javascript" src="static/js/DataTables/datatables.js"></script>
 """
     with open (OUT_HTML, "w") as f:
         f.write(webpage)
