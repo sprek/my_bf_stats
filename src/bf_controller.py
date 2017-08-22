@@ -82,7 +82,7 @@ def get_stats_from_db(db):
     for user in users:
         last_stat=stats.get_latest_stat_for_user(user, db)
         tmp_list=[]
-        tmp_list.append(last_stat.user)
+        tmp_list.append(unescape_spaces(last_stat.user))
         tmp_list.append(last_stat.score)
         tmp_list.append(last_stat.general_score)
         tmp_list.append(last_stat.wins)
@@ -156,6 +156,9 @@ def subtract_times(time_int_a, time_int_b):
                get_timedelta_from_time_str(get_time_str_from_int(time_int_b))
     return get_time_str_from_timedelta (diff_time)
 
+def unescape_spaces(word):
+    return word.replace("%20"," ")
+
 def calculate_stats(db):
     users = sorted(stats.get_users(db))
     last_sun = get_last_sunday()
@@ -163,6 +166,9 @@ def calculate_stats(db):
     for user in users:
         all_stats=stats.get_stats_for_user_starting_from_date(user, last_sun, db)
         last_stat=stats.get_last_stat_before_date(user, last_sun, db)
+        tmp_list=[]
+        tmp_list.append(unescape_spaces(user))
+        
         if not all_stats:
             # don't have an entry for this player this week
             print ("Don't have entry for " + user + " this week")
@@ -173,8 +179,6 @@ def calculate_stats(db):
             # don't have an entry for last week
             # use the first stat of this week
             last_stat=all_stats[0]
-        tmp_list=[]
-        tmp_list.append(user)
         
         rounds=all_stats[-1].rounds_played - last_stat.rounds_played
         if all_stats[-1].time_played == last_stat.time_played:
