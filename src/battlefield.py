@@ -73,6 +73,7 @@ def generate_webpage(db):
 <script>
 $(document).ready(function() {
 $('#bf_table').DataTable({
+             "order" : [[6,"desc"]],
              "scrollX": true,
              paging: false,
              fixedColumns: true
