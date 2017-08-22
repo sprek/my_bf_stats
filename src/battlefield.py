@@ -35,6 +35,7 @@ def get_options():
         GENERATE_WITHOUT_SCRAPE = True
 
 def get_update(db):
+    got_update=False
     if not GENERATE_WITHOUT_SCRAPE:
         for i,user in enumerate(USERS):
             cur_stat=bf_controller.get_stats(user, get_db())
@@ -50,6 +51,8 @@ def get_update(db):
                 if i != len(USERS)-1:
                     # put a 1 sec delay between website requests
                     time.sleep(1)
+    if not got_update:
+        logging.info("No new games played")
     generate_webpage(db)
 
 def generate_webpage(db):
