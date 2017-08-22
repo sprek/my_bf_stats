@@ -55,12 +55,19 @@ def get_update(db):
         logging.info("No new games played")
     generate_webpage(db)
 
+def check_highlight(cur_user, max_user):
+    if cur_user == max_user:
+        return " class=\"dt_highlight\""
+    return ""
+    
 def generate_webpage(db):
     webpage=""
     with open (START_HTML,'r') as f:
         webpage += f.read()
     stats_df=bf_controller.get_stats_from_db(db)
     calc_stats_df=bf_controller.calculate_stats(db)
+    max_users_calc=bf_controller.get_maximums_calc(calc_stats_df)
+    max_users=bf_controller.get_maximums(stats_df)
     webpage += """
 <script>
 $(document).ready(function() {
@@ -98,19 +105,19 @@ $('#example2').DataTable({
     for row in calc_stats_df.itertuples():
         webpage += "<tr>\n"
         webpage += "<td>" + str(row.user) + "</td>\n"
-        webpage += "<td>" + str(row.rounds) + "</td>\n"
-        webpage += "<td>" + str(row.time_played) + "</td>\n"
-        webpage += "<td>" + str(row.score) + "</td>\n"
-        webpage += "<td>" + str(row.general_score) + "</td>\n"
-        webpage += "<td>" + str(round(row.score_per_min,2)) + "</td>\n"
-        webpage += "<td>" + str(round(row.general_score_per_min,2)) + "</td>\n"
-        webpage += "<td>" + str(round(row.win_loss,2)) + "</td>\n"
-        webpage += "<td>" + str(round(row.kill_death,2)) + "</td>\n"
-        webpage += "<td>" + str(round(row.kills_per_min,2)) + "</td>\n"
-        webpage += "<td>" + str(round(row.kills_per_round,2)) + "</td>\n"
-        webpage += "<td>" + str(row.mvp) + "</td>\n"
-        webpage += "<td>" + str(row.ace) + "</td>\n"
-        webpage += "<td>" + str(round(row.flags_capped_per_min,2)) + "</td>\n"
+        webpage += "<td"+check_highlight(row.user, max_users_calc.rounds)+">" + str(row.rounds) + "</td>\n"
+        webpage += "<td"+check_highlight(row.user, max_users_calc.time_played)+">" + str(row.time_played) + "</td>\n"
+        webpage += "<td"+check_highlight(row.user, max_users_calc.score)+">" + str(row.score) + "</td>\n"
+        webpage += "<td"+check_highlight(row.user, max_users_calc.general_score)+">" + str(row.general_score) + "</td>\n"
+        webpage += "<td"+check_highlight(row.user, max_users_calc.score_per_min)+">" + str(round(row.score_per_min,2)) + "</td>\n"
+        webpage += "<td"+check_highlight(row.user, max_users_calc.general_score_per_min)+">" + str(round(row.general_score_per_min,2)) + "</td>\n"
+        webpage += "<td"+check_highlight(row.user, max_users_calc.win_loss)+">" + str(round(row.win_loss,2)) + "</td>\n"
+        webpage += "<td"+check_highlight(row.user, max_users_calc.kill_death)+">" + str(round(row.kill_death,2)) + "</td>\n"
+        webpage += "<td"+check_highlight(row.user, max_users_calc.kills_per_min)+">" + str(round(row.kills_per_min,2)) + "</td>\n"
+        webpage += "<td"+check_highlight(row.user, max_users_calc.kills_per_round)+">" + str(round(row.kills_per_round,2)) + "</td>\n"
+        webpage += "<td"+check_highlight(row.user, max_users_calc.mvp)+">" + str(row.mvp) + "</td>\n"
+        webpage += "<td"+check_highlight(row.user, max_users_calc.ace)+">" + str(row.ace) + "</td>\n"
+        webpage += "<td"+check_highlight(row.user, max_users_calc.flags_capped_per_min)+">" + str(round(row.flags_capped_per_min,2)) + "</td>\n"
         webpage += "</tr>\n"
     webpage += "</tbody>\n</table>\n"
     webpage += """
@@ -133,19 +140,19 @@ $('#example2').DataTable({
     for row in stats_df.itertuples():
         webpage += "<tr>\n"
         webpage += "<td>" + str(row.user) + "</td>\n"
-        webpage += "<td>" + str(row.score) + "</td>\n"
-        webpage += "<td>" + str(row.general_score) + "</td>\n"
-        webpage += "<td>" + str(row.wins) + "</td>\n"
-        webpage += "<td>" + str(row.losses) + "</td>\n"
-        webpage += "<td>" + str(row.rounds_played) + "</td>\n"
-        webpage += "<td>" + str(row.kills) + "</td>\n"
-        webpage += "<td>" + str(row.deaths) + "</td>\n"
-        webpage += "<td>" + str(row.time_played) + "</td>\n"
-        webpage += "<td>" + str(row.mvp) + "</td>\n"
-        webpage += "<td>" + str(row.ace_squad) + "</td>\n"
-        webpage += "<td>" + str(row.longest_headshot) + "</td>\n"
-        webpage += "<td>" + str(row.kill_streak) + "</td>\n"
-        webpage += "<td>" + str(row.flag_caps) + "</td>\n"
+        webpage += "<td"+check_highlight(row.user, max_users.score           )+">" + str(row.score) + "</td>\n"
+        webpage += "<td"+check_highlight(row.user, max_users.general_score   )+">" + str(row.general_score) + "</td>\n"
+        webpage += "<td"+check_highlight(row.user, max_users.wins            )+">" + str(row.wins) + "</td>\n"
+        webpage += "<td"+check_highlight(row.user, max_users.losses          )+">" + str(row.losses) + "</td>\n"
+        webpage += "<td"+check_highlight(row.user, max_users.rounds_played   )+">" + str(row.rounds_played) + "</td>\n"
+        webpage += "<td"+check_highlight(row.user, max_users.kills           )+">" + str(row.kills) + "</td>\n"
+        webpage += "<td"+check_highlight(row.user, max_users.deaths          )+">" + str(row.deaths) + "</td>\n"
+        webpage += "<td"+check_highlight(row.user, max_users.time_played     )+">" + str(row.time_played) + "</td>\n"
+        webpage += "<td"+check_highlight(row.user, max_users.mvp             )+">" + str(row.mvp) + "</td>\n"
+        webpage += "<td"+check_highlight(row.user, max_users.ace_squad       )+">" + str(row.ace_squad) + "</td>\n"
+        webpage += "<td"+check_highlight(row.user, max_users.longest_headshot)+">" + str(row.longest_headshot) + "</td>\n"
+        webpage += "<td"+check_highlight(row.user, max_users.kill_streak     )+">" + str(row.kill_streak) + "</td>\n"
+        webpage += "<td"+check_highlight(row.user, max_users.flag_caps       )+">" + str(row.flag_caps) + "</td>\n"
         webpage += "</tr>\n"
     webpage += "</tbody>\n</table>\n"
     webpage += """

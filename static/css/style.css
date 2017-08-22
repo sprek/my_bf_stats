@@ -11,4 +11,6 @@ td {
   white-space: nowrap;
 }
 
-
+.dt_highlight {
+    background-color: #f0f0aa !important;
+}
