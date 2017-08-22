@@ -3,6 +3,7 @@ from database import stats, create_db
 import pandas as pd
 import logging, sys
 import time
+import datetime as dt
 
 USERS=['sprekk','buttDecimator', "Chairman%20OSU", "BroNCHRIST", "Cyanider",
        "desertfox0231", "LurchMD", "HandMade45", "zarathustra007","YutYutDblYut",
@@ -71,12 +72,12 @@ def generate_webpage(db):
     webpage += """
 <script>
 $(document).ready(function() {
-$('#example').DataTable({
+$('#bf_table').DataTable({
              "scrollX": true,
              paging: false,
              fixedColumns: true
          });
-$('#example2').DataTable({
+$('#bf_table2').DataTable({
              "scrollX": true,
              paging: false,
              fixedColumns: true
@@ -89,7 +90,7 @@ $('#example2').DataTable({
 <div class="container">
 <h2>Stats</h2>
 <h3>Weekly</h3>
-<table id="example" class="display text-right" cellspace="0" width="100%">
+<table id="bf_table" class="display text-right" cellspace="0" width="100%">
 <thead>
 <tr>
 """
@@ -122,7 +123,7 @@ $('#example2').DataTable({
     webpage += "</tbody>\n</table>\n"
     webpage += """
 <h3>Overall</h3>
-<table id="example2" class="display text-right" cellspace="0" width="100%">
+<table id="bf_table2" class="display text-right" cellspace="0" width="100%">
 <thead>
 <tr>
 """
@@ -155,8 +156,15 @@ $('#example2').DataTable({
         webpage += "<td"+check_highlight(row.user, max_users.flag_caps       )+">" + str(row.flag_caps) + "</td>\n"
         webpage += "</tr>\n"
     webpage += "</tbody>\n</table>\n"
+    webpage += "<div class=\"row\">\n<hr>\n"
+    
+    cur_time=(dt.datetime.utcnow() - dt.timedelta(minutes=60*4)).strftime("%Y-%m-%d %H:%M")
+    webpage += "<p class=\"text-right\">Updated: " + cur_time + "</p>\n"
+    webpage += "</div>"
     webpage += """
+
 </div>
+
     <link rel="stylesheet" type="text/css" href="static/js/DataTables/datatables.min.css"/>
     <script type="text/javascript" src="static/js/DataTables/datatables.js"></script>
 """

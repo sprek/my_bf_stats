@@ -12,20 +12,26 @@ def remove_commas(comma_int):
     return int(comma_int.replace(',',''))
 
 def convert_time_to_int(time_str):
-    if str(time_str).strip() == '0':
-        return 0
-    time=0
-    time_split=time_str.split(":")
-    if len(time_split) ==3:
-        time += int(time_split[0]) * HOURS
-        time += int(time_split[1]) * MINUTES
-        time += int(time_split[2])
-    elif len(time_split) == 2:
-        time += int(time_split[0]) * MINUTES
-        time += int(time_split[1])
-    else:
-        time = int(time_str)
-    return time
+    """ --------------------------------------------------
+    Converts a string in format H:MM:SS to an integer in 
+    the format: HMMSS
+    """
+    return int(str(time_str).replace(':',''))
+
+    #if str(time_str).strip() == '0':
+    #    return 0
+    #time=0
+    #time_split=time_str.split(":")
+    #if len(time_split) ==3:
+    #    time += int(time_split[0]) * HOURS
+    #    time += int(time_split[1]) * MINUTES
+    #    time += int(time_split[2])
+    #elif len(time_split) == 2:
+    #    time += int(time_split[0]) * MINUTES
+    #    time += int(time_split[1])
+    #else:
+    #    time = int(time_str)
+    #return time
 
 def get_current_time():
     now = dt.datetime.now()
@@ -110,6 +116,10 @@ def get_last_sunday():
     return last_sun
 
 def get_minutes_in_time(time_int):
+    """ --------------------------------------------------
+    Converts a time integer in the format HMMSS to a float
+    equal to the number of minutes
+    """
     total=0
     time_str=str(time_int)
     if len(time_str) >= 1:
@@ -121,6 +131,10 @@ def get_minutes_in_time(time_int):
     return total
 
 def get_time_str_from_int(time_int):
+    """ --------------------------------------------------
+    Converts a time integer in the format HMMSS to a string
+    in the format: H:MM:SS
+    """
     new_str=''
     time_str=str(time_int)
     if len(time_str) >= 1:
@@ -132,13 +146,13 @@ def get_time_str_from_int(time_int):
     return new_str
 
 def get_timedelta_from_time_str(time_str):
-    vals=time_str.split(":")
-    if len(vals)==3:
-        td=dt.timedelta(seconds=(int(vals[2]) + int(vals[1])*60 + int(vals[0])*60*60))
-    elif len(vals)==2:
-        td=dt.timedelta(seconds=(int(vals[2]) + int(vals[1])*60))
-    elif len(vals)==1:
-        td=dt.timedelta(seconds=(int(vals[2])))
+    """ --------------------------------------------------
+    Converts a time string in the format H:MM:SS to a 
+    timedelta object
+    """
+    #print ("TIME STR: " + time_str)
+    td=dt.timedelta(minutes=get_minutes_in_time(convert_time_to_int(time_str)))
+    #print ("TD: " + str(td))
     return td
 
 def get_time_str_from_timedelta(td):
@@ -165,6 +179,7 @@ def calculate_stats(db):
     users = sorted(stats.get_users(db))
     last_sun = get_last_sunday()
     data=[]
+    NUM_ENTRIES=14
     for user in users:
         all_stats=stats.get_stats_for_user_starting_from_date(user, last_sun, db)
         last_stat=stats.get_last_stat_before_date(user, last_sun, db)
@@ -174,14 +189,14 @@ def calculate_stats(db):
         if not all_stats:
             # don't have an entry for this player this week
             #logging.info("Don't have entry for " + user + " this week")
-            tmp_list += [0]*13
+            tmp_list += [0]*(NUM_ENTRIES-1)
             data.append(tmp_list)
             continue
         if not last_stat:
             if len(all_stats)==1:
                 # only have a single entry and no entry from last week
                 # just set everything to 0
-                tmp_list += [0]*13
+                tmp_list += [0]*(NUM_ENTRIES-1)
                 data.append(tmp_list)
                 continue
             # don't have an entry for last week
@@ -205,11 +220,11 @@ def calculate_stats(db):
         kills_per_min=kills / float(time_min)
         flags_capped_per_min=flags / float(time_min)
         kills_per_round=kills/float(rounds)
-        win_loss=wins / float(losses)
-        kill_death=kills / float(deaths)
+        win_loss=wins / float(max(losses,1))
+        kill_death=kills / float(max(deaths,1))
         
         tmp_list.append(rounds)
-        tmp_list.append(get_time_str_from_int(time_played))
+        tmp_list.append(time_played)
         tmp_list.append(score)
         tmp_list.append(general_score)
         tmp_list.append(score_per_min)
@@ -221,48 +236,39 @@ def calculate_stats(db):
         tmp_list.append(mvp)
         tmp_list.append(ace)
         tmp_list.append(flags_capped_per_min)
+        if len(tmp_list) != NUM_ENTRIES:
+            logging.error("Invalid number of entries in calculate_stats")
         data.append(tmp_list)
     calc_stats_df = pd.DataFrame(data)
     calc_stats_df.columns=["user", "rounds", "time_played", "score", "general_score", "score_per_min", "general_score_per_min", "win_loss", "kill_death", "kills_per_min", "kills_per_round", "mvp", "ace", "flags_capped_per_min"]
     return calc_stats_df
 
 def get_maximums(stats_df):
-    MaxUsers=namedtuple("MaxUsers","score general_score wins losses rounds_played kills deaths time_played mvp ace_squad longest_headshot kill_streak flag_caps")
+    field_list=["score", "general_score", "wins", "losses", "rounds_played", "kills", "deaths", "time_played", "mvp", "ace_squad", "longest_headshot", "kill_streak", "flag_caps"]
+    MaxUsers=namedtuple("MaxUsers",field_list)
     tmp_df=stats_df.copy()
     tmp_df['time_played']=tmp_df['time_played'].map(convert_time_to_int)
-    max_users=MaxUsers(
-        score=tmp_df.iloc[tmp_df['score'].argmax].user,
-        general_score=tmp_df.iloc[tmp_df['general_score'].argmax].user,
-        wins=tmp_df.iloc[tmp_df['wins'].argmax].user,
-        losses=tmp_df.iloc[tmp_df['losses'].argmax].user,
-        rounds_played=tmp_df.iloc[tmp_df['rounds_played'].argmax].user,
-        kills=tmp_df.iloc[tmp_df['kills'].argmax].user,
-        deaths=tmp_df.iloc[tmp_df['deaths'].argmax].user,
-        time_played=tmp_df.iloc[tmp_df['time_played'].argmax].user,
-        mvp=tmp_df.iloc[tmp_df['mvp'].argmax].user,
-        ace_squad=tmp_df.iloc[tmp_df['ace_squad'].argmax].user,
-        longest_headshot=tmp_df.iloc[tmp_df['longest_headshot'].argmax].user,
-        kill_streak=tmp_df.iloc[tmp_df['kill_streak'].argmax].user,
-        flag_caps=tmp_df.iloc[tmp_df['flag_caps'].argmax].user)
+    field_vals=[]
+    for i,field in enumerate(field_list):
+        if len(tmp_df[field_list[i]].unique()) == 1:
+            field_vals.append('')
+        else:
+            field_vals.append(tmp_df.iloc[tmp_df[field].argmax].user)
+    max_users=MaxUsers(*field_vals)
     return max_users
 
 def get_maximums_calc(calc_stats_df):
-    MaxUsersCalc=namedtuple("MaxUsersCalc",["rounds", "time_played", "score", "general_score", "score_per_min", "general_score_per_min", "win_loss", "kill_death", "kills_per_min", "kills_per_round", "mvp", "ace", "flags_capped_per_min"])
+    field_list=["rounds", "time_played", "score", "general_score", "score_per_min", "general_score_per_min", "win_loss", "kill_death", "kills_per_min", "kills_per_round", "mvp", "ace", "flags_capped_per_min"]
+    MaxUsersCalc=namedtuple("MaxUsersCalc",field_list)
     
     tmp_df=calc_stats_df.copy()
     tmp_df['time_played']=tmp_df['time_played'].map(convert_time_to_int)
-    max_users=MaxUsersCalc(
-        rounds=tmp_df.iloc[tmp_df['rounds'].argmax].user,
-        time_played=tmp_df.iloc[tmp_df['time_played'].argmax].user,
-        score=tmp_df.iloc[tmp_df['score'].argmax].user,
-        general_score=tmp_df.iloc[tmp_df['general_score'].argmax].user,
-        score_per_min=tmp_df.iloc[tmp_df['score_per_min'].argmax].user,
-        general_score_per_min=tmp_df.iloc[tmp_df['general_score_per_min'].argmax].user,
-        win_loss=tmp_df.iloc[tmp_df['win_loss'].argmax].user,
-        kill_death=tmp_df.iloc[tmp_df['kill_death'].argmax].user,
-        kills_per_min=tmp_df.iloc[tmp_df['kills_per_min'].argmax].user,
-        kills_per_round=tmp_df.iloc[tmp_df['kills_per_round'].argmax].user,
-        mvp=tmp_df.iloc[tmp_df['mvp'].argmax].user,
-        ace=tmp_df.iloc[tmp_df['ace'].argmax].user,
-        flags_capped_per_min=tmp_df.iloc[tmp_df['flags_capped_per_min'].argmax].user)
+    field_vals=[]
+    for i,field in enumerate(field_list):
+        if len(tmp_df[field_list[i]].unique()) == 1:
+            field_vals.append('')
+        else:
+            field_vals.append(tmp_df.iloc[tmp_df[field].argmax].user)
+        
+    max_users=MaxUsersCalc(*field_vals)
     return max_users
