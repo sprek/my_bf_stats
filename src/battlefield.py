@@ -83,6 +83,13 @@ def generate_webpage(db):
     webpage += """
 <script>
 $(document).ready(function() {
+
+$('#apg').click(function() {
+  $('#body').addClass('apg');
+  $("#animate").removeClass('invis');
+  $("#animate").addClass('vis');
+  });
+
 $('#bf_table_all_weekly_records').DataTable({
              "order" : [[0,"desc"]],
              paging: false,
@@ -115,12 +122,13 @@ $('#bf_table2').DataTable({
 </script>
 """
     webpage += """
-<body>
+<body id="body">
 <div class="container">
-<h2>Stats</h2>
+<h2><a href="#" id="apg">Stats</a></h2>
+<div id="animate" class="invis"><img src="static/pat_moar.jpg"></div>
 """
     webpage += """
-<h3>Scoreboard</h3>
+<h3>Scoreboard <small>(best in a single game)</small></h3>
 <table id="bf_table_all_weekly_records" class="display text-right" cellspace="0" width="600px" style="margin: 0px">
 <thead>
 <tr>
@@ -148,7 +156,7 @@ $('#bf_table2').DataTable({
         webpage += "</tr>\n"
     webpage += "</tbody>\n</table>\n"
     webpage += """
-<h3>Weekly Records</h3>
+<h3>Weekly Records <small>(best in a single game)</small></h3>
 <table id="bf_table_weekly_records" class="display text-right" cellspace="0" width="400px" style="margin: 0px">
 <thead>
 <tr>
