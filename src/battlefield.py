@@ -1,13 +1,13 @@
 import bf_controller, os, sqlite3
 from database import stats, create_db
-import pandas as pd
 import logging, sys
 import time
 import datetime as dt
+import bf_time as bft
 
-USERS=['sprekk','buttDecimator', "Chairman%20OSU", "BroNCHRIST", "Cyanider",
-       "desertfox0231", "LurchMD", "HandMade45", "zarathustra007","YutYutDblYut",
-       "Custom3173","Major%20Printers"]
+USERS=["sprekk", "buttDecimator", "Chairman%20OSU", "BroNCHRIST", "Cyanider",
+       "desertfox0231", "LurchMD", "HandMade45", "zarathustra007", "YutYutDblYut",
+       "Custom3173", "Major%20Printers"]
 DATABASE=create_db.DATABASE
 START_HTML="start_html.html"
 
@@ -40,12 +40,15 @@ def get_update(db):
     if not GENERATE_WITHOUT_SCRAPE:
         for i,user in enumerate(USERS):
             cur_stat=bf_controller.get_stats(user, get_db())
-            #stats.print_stat(cur_stat)
+            # stats.print_stat(cur_stat)
             latest_stat=stats.get_latest_stat_for_user(user, db)
             if not latest_stat:
                 logging.info("No entry for user: " + user + ". Creating one now")
             if not latest_stat or (latest_stat.score != cur_stat.score):
                 logging.info("Getting update for user: " + user)
+                if latest_stat.rounds_played == cur_stat.rounds_played:
+                    # remove the last entry from the database
+                    stats.delete_from_db_by_date(latest_stat.date, db)
                 # there's been an update
                 stats.insert_stat_into_db(cur_stat, db)
                 got_update = True
@@ -54,10 +57,14 @@ def get_update(db):
                     time.sleep(1)
     if not got_update:
         logging.info("No new games played")
+
+    # refresh the records
+    bf_controller.calculate_all_weekly_records(db)
+    
     generate_webpage(db)
 
 def check_highlight(cur_user, max_user):
-    if cur_user == max_user:
+    if str(cur_user) in list(map(lambda x: str(x).strip(), str(max_user).split(','))):
         return " class=\"dt_highlight\""
     return ""
     
@@ -69,19 +76,40 @@ def generate_webpage(db):
     calc_stats_df=bf_controller.calculate_stats(db)
     max_users_calc=bf_controller.get_maximums_calc(calc_stats_df)
     max_users=bf_controller.get_maximums(stats_df)
+    weekly_records_df = bf_controller.get_weekly_record_stats(db)
+    max_weekly_records=bf_controller.get_maximum_records(weekly_records_df)
+    all_records_df = bf_controller.get_all_records_from_db(db)
+    all_records_maximums_df = bf_controller.get_max_all_records(all_records_df)
     webpage += """
 <script>
 $(document).ready(function() {
+$('#bf_table_all_weekly_records').DataTable({
+             "order" : [[0,"desc"]],
+             paging: false,
+             bFilter: false,
+             bInfo: false
+         });
+$('#bf_table_weekly_records').DataTable({
+             "order" : [[1,"desc"]],
+             paging: false,
+             bFilter: false,
+             bInfo: false
+
+         });
 $('#bf_table').DataTable({
              "order" : [[6,"desc"]],
              "scrollX": true,
              paging: false,
-             fixedColumns: true
+             fixedColumns: true,
+             bFilter: false,
+             bInfo: false
          });
 $('#bf_table2').DataTable({
              "scrollX": true,
              paging: false,
-             fixedColumns: true
+             fixedColumns: true,
+             bFilter: false,
+             bInfo: false
          });
 });
 </script>
@@ -90,6 +118,59 @@ $('#bf_table2').DataTable({
 <body>
 <div class="container">
 <h2>Stats</h2>
+"""
+    webpage += """
+<h3>Scoreboard</h3>
+<table id="bf_table_all_weekly_records" class="display text-right" cellspace="0" width="600px" style="margin: 0px">
+<thead>
+<tr>
+"""
+    display_fields=["#", "Week", "Score Winner", "Score", "Kills Winner", "Kills", "Flag Caps Winner", "Flag Caps"]
+    webpage += '\n'.join(["<th>" + x + "</th>" for x in display_fields])
+    webpage += "</tr>\n"
+    webpage += "</thead>\n"
+    webpage += "<tfoot>\n"
+    webpage += "<tr>\n"
+    webpage += '\n'.join(["<th>" + x + "</th>" for x in display_fields])
+    webpage += "</tr>\n"
+    webpage += "</tfoot>\n</thead>\n<tbody>\n"
+    for i,row in enumerate(all_records_df.itertuples()):
+        cur_date=bft.get_date_from_date_int(row.date)
+        webpage += "<tr>\n"
+        webpage += "<td>" + str(i) + "</td>\n"
+        webpage += "<td>" + cur_date.strftime("%B %d") + "</td>\n"
+        webpage += "<td>" + row.score_user + "</td>\n"
+        webpage += "<td"+check_highlight(row.score, all_records_maximums_df.score)+">" + str(row.score) + "</td>\n"
+        webpage += "<td>" + row.kills_user + "</td>\n"
+        webpage += "<td"+check_highlight(row.kills, all_records_maximums_df.kills)+">" + str(row.kills) + "</td>\n"
+        webpage += "<td>" + row.flag_caps_user + "</td>\n"
+        webpage += "<td"+check_highlight(row.flag_caps, all_records_maximums_df.flag_caps)+">" + str(row.flag_caps) + "</td>\n"
+        webpage += "</tr>\n"
+    webpage += "</tbody>\n</table>\n"
+    webpage += """
+<h3>Weekly Records</h3>
+<table id="bf_table_weekly_records" class="display text-right" cellspace="0" width="400px" style="margin: 0px">
+<thead>
+<tr>
+"""
+    display_fields=["User", "Score", "Kills", "Flag Caps"]
+    webpage += '\n'.join(["<th>" + x + "</th>" for x in display_fields])
+    webpage += "</tr>\n"
+    webpage += "</thead>\n"
+    webpage += "<tfoot>\n"
+    webpage += "<tr>\n"
+    webpage += '\n'.join(["<th>" + x + "</th>" for x in display_fields])
+    webpage += "</tr>\n"
+    webpage += "</tfoot>\n</thead>\n<tbody>\n"
+    for row in weekly_records_df.itertuples():
+        webpage += "<tr>\n"
+        webpage += "<td>" + str(row.user) + "</td>\n"
+        webpage += "<td"+check_highlight(row.user, max_weekly_records.score)+">" + str(row.score) + "</td>\n"
+        webpage += "<td"+check_highlight(row.user, max_weekly_records.kills)+">" + str(row.kills) + "</td>\n"
+        webpage += "<td"+check_highlight(row.user, max_weekly_records.flag_caps)+">" + str(row.flag_caps) + "</td>\n"
+        webpage += "</tr>\n"
+    webpage += "</tbody>\n</table>\n"
+    webpage += """
 <h3>Weekly</h3>
 <table id="bf_table" class="display text-right" cellspace="0" width="100%">
 <thead>
@@ -195,6 +276,7 @@ def get_db():
         #sys.exit(1)
     db = sqlite3.connect(DATABASE, detect_types=sqlite3.PARSE_DECLTYPES|sqlite3.PARSE_COLNAMES)
     return db
+
 
 if __name__ == "__main__":
     setup_logging()

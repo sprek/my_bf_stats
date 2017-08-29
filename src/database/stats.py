@@ -44,6 +44,12 @@ def get_stats_for_user_starting_from_date(user,date,db):
         return results
     return None
 
+def get_stats_for_user_in_date_range(user,start_date,end_date,db):
+    results=data_model.get_objects_from_db_by_key_and_two_col_condition(Stats, "user", user, "date", start_date, ">=", "date", end_date, "<=", db)
+    if results:
+        return results
+    return None
+
 def get_last_stat_before_date(user, date, db):
     results=data_model.get_objects_from_db_by_key_and_col_condition(Stats, "user", user, "date", date, "<", db)
     if results:
@@ -66,8 +72,6 @@ def get_single_stats_from_db(date, user, db):
     #return data_model.get_object_from_db_by_key(Stats, 'date', date, db)
     return data_model.get_object_from_db_by_2key(Stats, 'date', date, 'user', user, db)
 
-
-
 def clear_table(db):
     data_model.clear_table(Stats, db)
 
@@ -87,6 +91,9 @@ def get_dates(db):
 
 def get_latest_date(db):
     return sorted(get_dates(db))[-1]
+
+def get_earliest_date(db):
+    return sorted(get_dates(db))[0]
 
 def get_users(db):
     return sorted(data_model.get_distinct(Stats, "user", db))

@@ -138,6 +138,18 @@ def get_objects_from_db_by_key_and_col_condition(class_name, key_name, key_val, 
         return None
     return objects
 
+def get_objects_from_db_by_key_and_two_col_condition(class_name, key_name, key_val, col1_name, col1_val, condition1, col2_name, col2_val, condition2, db):
+    """
+    condition: <, <=, >, >=, =
+    """
+    cur = db.cursor()
+    table_name = class_name_to_table_name(class_name)
+    db_result = cur.execute("SELECT * FROM " + table_name + " where " + key_name + " = ? AND " + col1_name + " " + condition1 + " ? AND " + col2_name + " " + condition2 + " ? ORDER BY " + col1_name, (key_val,col1_val,col2_val,))
+    objects = _get_objects_from_db_result(class_name, db_result)
+    if len(objects) == 0:
+        return None
+    return objects
+
 def get_objects_from_db_by_key_sorted(class_name, key_name, key_val, sort_col, db):
     cur = db.cursor()
     table_name = class_name_to_table_name(class_name)
