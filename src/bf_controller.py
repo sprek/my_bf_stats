@@ -187,6 +187,8 @@ def calculate_all_weekly_records(db):
     users = stats.get_users(db)
 
     while start_date_int <= last_date_int:
+        if start_date_int >= bft.get_last_sunday():
+            break
         start_date=bft.get_date_from_date_int(start_date_int)
         days_til_end_week = 7 - start_date.weekday()
         end_date=start_date + dt.timedelta(days=days_til_end_week) - dt.timedelta(seconds=1)
