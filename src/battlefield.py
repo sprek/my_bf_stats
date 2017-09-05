@@ -170,13 +170,14 @@ $('#bf_table2').DataTable({
     webpage += '\n'.join(["<th>" + x + "</th>" for x in display_fields])
     webpage += "</tr>\n"
     webpage += "</tfoot>\n</thead>\n<tbody>\n"
-    for row in weekly_records_df.itertuples():
-        webpage += "<tr>\n"
-        webpage += "<td>" + str(row.user) + "</td>\n"
-        webpage += "<td"+check_highlight(row.user, max_weekly_records.score)+">" + str(row.score) + "</td>\n"
-        webpage += "<td"+check_highlight(row.user, max_weekly_records.kills)+">" + str(row.kills) + "</td>\n"
-        webpage += "<td"+check_highlight(row.user, max_weekly_records.flag_caps)+">" + str(row.flag_caps) + "</td>\n"
-        webpage += "</tr>\n"
+    if weekly_records_df and len(weekly_records_df) == 0:
+        for row in weekly_records_df.itertuples():
+            webpage += "<tr>\n"
+            webpage += "<td>" + str(row.user) + "</td>\n"
+            webpage += "<td"+check_highlight(row.user, max_weekly_records.score)+">" + str(row.score) + "</td>\n"
+            webpage += "<td"+check_highlight(row.user, max_weekly_records.kills)+">" + str(row.kills) + "</td>\n"
+            webpage += "<td"+check_highlight(row.user, max_weekly_records.flag_caps)+">" + str(row.flag_caps) + "</td>\n"
+            webpage += "</tr>\n"
     webpage += "</tbody>\n</table>\n"
     webpage += """
 <h3>Weekly</h3>
