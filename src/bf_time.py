@@ -82,7 +82,7 @@ def get_time_str_from_timedelta(td):
     hours, remainder = divmod(td.seconds, 3600)
     minutes, seconds = divmod(remainder, 60)
     return_time=""
-    if seconds > 0:
+    if seconds >= 0:
         return_time='{0:02d}'.format(seconds)
     if minutes > 0 or hours > 0:
         return_time='{0:02d}'.format(minutes) + ":" + return_time

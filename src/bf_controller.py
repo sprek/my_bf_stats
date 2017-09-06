@@ -1,3 +1,4 @@
+#import pdb
 import requests
 from bs4 import BeautifulSoup
 from database import stats, records
@@ -265,6 +266,7 @@ def get_record_stats(user_stats_dict):
     return max_vals_df
 
 def calculate_stats(db):
+    
     users = sorted(stats.get_users(db))
     last_sun = bft.get_last_sunday()
     data=[]
