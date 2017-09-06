@@ -170,7 +170,7 @@ $('#bf_table2').DataTable({
     webpage += '\n'.join(["<th>" + x + "</th>" for x in display_fields])
     webpage += "</tr>\n"
     webpage += "</tfoot>\n</thead>\n<tbody>\n"
-    if not weekly_records_df.empty and len(weekly_records_df) == 0:
+    if not weekly_records_df.empty and len(weekly_records_df) != 0:
         for row in weekly_records_df.itertuples():
             webpage += "<tr>\n"
             webpage += "<td>" + str(row.user) + "</td>\n"
