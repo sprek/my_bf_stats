@@ -373,7 +373,7 @@ def get_maximum_records(records_df):
     MaxUsersRecords=namedtuple("MaxUsersRecords",field_list)
     
     field_vals=[]
-    if records_df == None or records_df.empty:
+    if records_df is None or records_df.empty:
         return MaxUsersRecords("","","")
     for i,field in enumerate(field_list):
         if len(records_df[field_list[i]].unique()) == 1:
