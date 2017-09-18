@@ -138,7 +138,7 @@ $('#bf_table2').DataTable({
 <div id="animate" class="invis"><img src="static/pat_moar.jpg"></div>
 """
     webpage += """
-<h3>Best Squad</h3>
+<h3>Best Squad <small>(at least 3 people in game)</small></h3>
 <table id="bf_table_ace" class="display text-right" cellspace="0">
 <thead>
 <tr>
