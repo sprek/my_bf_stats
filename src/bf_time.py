@@ -40,6 +40,26 @@ def get_last_sunday():
     last_sun=datetime_to_int(last_sun)
     return last_sun
 
+def get_last_sunday_before_date(date):
+    """ --------------------------------------------------
+    returns an integer of the format YYYYMMDDHHmmSS representing Sunday at 0:00
+    """
+    today=get_date_from_date_int(date)
+    # <sunday>.weekday() == 0
+    last_sun = today - dt.timedelta(days=((today.weekday()+1) % 7))
+    last_sun=datetime_to_int(last_sun)
+    return last_sun
+
+def get_last_monday_before_date(date):
+    """ --------------------------------------------------
+    returns an integer of the format YYYYMMDDHHmmSS representing Sunday at 0:00
+    """
+    today=get_date_from_date_int(date)
+    # <sunday>.weekday() == 0
+    last_sun = today - dt.timedelta(days=((today.weekday()) % 7))
+    last_sun=datetime_to_int(last_sun)
+    return last_sun
+
 def get_minutes_in_time(time_int):
     """ --------------------------------------------------
     Converts a time integer in the format HMMSS to a float
@@ -94,3 +114,8 @@ def subtract_times(time_int_a, time_int_b):
     diff_time=get_timedelta_from_time_str(get_time_str_from_int(time_int_a)) - \
         get_timedelta_from_time_str(get_time_str_from_int(time_int_b))
     return get_time_str_from_timedelta (diff_time)
+
+def subtract_times_as_timedelta(time_int_a, time_int_b):
+    diff_time=get_timedelta_from_time_str(get_time_str_from_int(time_int_a)) - \
+        get_timedelta_from_time_str(get_time_str_from_int(time_int_b))
+    return diff_time

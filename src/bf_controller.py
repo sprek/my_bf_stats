@@ -1,9 +1,9 @@
 #import pdb
 import requests
 from bs4 import BeautifulSoup
-from database import stats, records
+from database import stats, records, squad
 import datetime as dt
-from collections import namedtuple
+from collections import namedtuple, Counter, defaultdict
 import pandas as pd
 import logging
 import bf_time as bft
@@ -176,6 +176,130 @@ def records_to_dataframe(records_):
     tmp_df.columns=["date", "score", "score_user", "kills", "kills_user", "flag_caps", "flag_caps_user"]
     return tmp_df
 
+def get_squad_stats(list_of_stats, db):
+    """ --------------------------------------------------
+    user_stats_dict: key = user name, value = list of Stats
+    returns a squad object for the given list of stats
+    """
+    round_window_min=5 # num minutes between entries
+    rounds=defaultdict(list)
+    squad_contributors=Counter()
+    total_ace=0
+    total_rounds=0
+
+    for user in list_of_stats:
+        if not list_of_stats[user]:
+            continue
+        for stat in list_of_stats[user]:
+            did_find=False
+            for round_date in rounds:
+                if bft.subtract_times_as_timedelta(round_date, stat.date).seconds <= round_window_min*60:
+                    rounds[round_date].append(stat)
+                    did_find = True
+            if not did_find:
+                rounds[stat.date].append(stat)
+    for round_date in rounds:
+        stats_list=rounds[round_date]
+        if len(stats_list) >= 3:
+            num_ace=0
+            tmp_squad_contrib=[]
+            for stat in stats_list:
+                last = stats.get_last_stat_before_date(stat.user, stat.date, db)
+                if last and stat.ace_squad - last.ace_squad > 0:
+                    num_ace += 1
+                    tmp_squad_contrib.append(stat.user)
+            if num_ace >= 3:
+                for user in tmp_squad_contrib:
+                    squad_contributors.update([user])
+                total_ace += 1
+            total_rounds += 1
+
+    if len(rounds) == 0:
+        return squad.Squad(date=0, top_contributors="", total_top=0, total_games=0)
+    cur_squad = squad.Squad(date=0,
+                            top_contributors=', '.join([unescape_spaces("{} ({})".format(x[0], x[1])) for x in squad_contributors.most_common(5)]),
+                            total_top=total_ace,
+                            total_games=total_rounds)
+    return cur_squad
+
+#def calculate_all_weekly_ace_squads(db):
+#    """ --------------------------------------------------
+#    Calculates all weekly squads, and inserts them into the database if a squad for
+#    that week doesn't exist
+#    """
+#    #all_stats=stats.get_stats_from_db_sorted(db)
+#    # just get the YYYMMDD
+#    start_date_int=int(str(stats.get_earliest_date(db))[:8]+"000000")
+#    last_date_int=int(str(stats.get_latest_date(db))[:8]+"000000")
+#    users = stats.get_users(db)
+#
+#    while start_date_int <= last_date_int:
+#        if start_date_int >= bft.get_last_sunday():
+#            break
+#        #print ("START DATE INT: " + str(start_date_int))
+#        #print ("LAST DATE INT: " + str(last_date_int))
+#        #print ("LAST SUN: " + str(bft.get_last_sunday_before_date(round_date)))
+#        start_date=bft.get_date_from_date_int(start_date_int)
+#        
+#        days_til_end_week = 7 - start_date.weekday()
+#        end_date=start_date + dt.timedelta(days=days_til_end_week) - dt.timedelta(seconds=1)
+#        if not squad.check_for_date(bft.get_last_sunday_before_date(start_date_int), db):
+#            user_stats_dict = {}
+#            for user in users:
+#                tmp_stats = stats.get_stats_for_user_in_date_range (user, bft.datetime_to_int(start_date),
+#                                                                    bft.datetime_to_int(end_date), db)
+#                user_stats_dict[user]=tmp_stats
+#            
+#            if len(user_stats_dict) == 0:
+#                continue
+#            squad_stats=get_squad_stats(user_stats_dict, db)
+#            squad.insert_squad_into_db(squad_stats, db)
+#        start_date_int=bft.datetime_to_int(start_date + dt.timedelta(days=days_til_end_week))
+
+def get_ace_squads(db):
+    """ --------------------------------------------------
+    Returns a dataframe containing all of the ace squads in the database
+    """
+    #squads_list=squad.get_squad_from_db(db)
+    #data=[]
+    #for sq in squads_list:
+    #    tmp_data=[]
+    #    tmp_data.append(sq.date)
+    #    tmp_data.append(sq.top_contributors)
+    #    tmp_data.append(sq.total_top)
+    #    tmp_data.append(sq.total_games)
+    #    data.append(tmp_data)
+        
+    
+    start_date_int=int(str(stats.get_earliest_date(db))[:8]+"000000")
+    last_date_int=int(str(stats.get_latest_date(db))[:8]+"000000")
+    data=[]
+    users = stats.get_users(db)
+    while start_date_int <= last_date_int:
+        start_date=bft.get_date_from_date_int(start_date_int)
+        days_til_end_week = 7 - start_date.weekday()
+        end_date=start_date + dt.timedelta(days=days_til_end_week) - dt.timedelta(seconds=1)
+        user_stats_dict = {}
+        for user in users:
+            tmp_stats = stats.get_stats_for_user_in_date_range (user, bft.datetime_to_int(start_date),
+                                                                bft.datetime_to_int(end_date), db)
+            user_stats_dict[user]=tmp_stats
+        if len(user_stats_dict) == 0:
+            continue
+        squad_stats=get_squad_stats(user_stats_dict, db)
+        tmp_data=[]
+        if squad_stats:
+            tmp_data.append(bft.get_last_monday_before_date(start_date_int))
+            tmp_data.append(squad_stats.top_contributors)
+            tmp_data.append(squad_stats.total_top)
+            tmp_data.append(squad_stats.total_games)
+            data.append(tmp_data)
+        start_date_int=bft.datetime_to_int(start_date + dt.timedelta(days=days_til_end_week))
+        #start_date_int=bft.datetime_to_int(end_date)
+    squads_df = pd.DataFrame(data)
+    squads_df.columns=["date","top_contributors","total_top","total_games"]
+    return squads_df
+
 def calculate_all_weekly_records(db):
     """ --------------------------------------------------
     Calculates all the weekly records, and inserts them into the database if a
@@ -219,6 +343,10 @@ def get_all_records_from_db(db):
     
         
 def get_record_stats(user_stats_dict):
+    """ --------------------------------------------------
+    user_stats_dict: key = user name, value = list of Stats
+    returns a dataframe with max values for score/kills/flag_caps
+    """
     #users = sorted(stats.get_users(db))
     data=[]
     NUM_ENTRIES=4
@@ -409,4 +537,5 @@ def get_max_all_records(all_records_df):
                             kills = all_records_df.kills.max(axis=0),
                             flag_caps = all_records_df.flag_caps.max(axis=0))
     
-
+def get_max_squads_total_top(squads_df):
+    return squads_df.total_top.max(axis=0)

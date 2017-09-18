@@ -60,6 +60,7 @@ def get_update(db):
 
     # refresh the records
     bf_controller.calculate_all_weekly_records(db)
+    #bf_controller.calculate_all_weekly_ace_squads(db)
     
     generate_webpage(db)
 
@@ -77,9 +78,11 @@ def generate_webpage(db):
     max_users_calc=bf_controller.get_maximums_calc(calc_stats_df)
     max_users=bf_controller.get_maximums(stats_df)
     weekly_records_df = bf_controller.get_weekly_record_stats(db)
+    ace_squads_df = bf_controller.get_ace_squads(db)
     max_weekly_records=bf_controller.get_maximum_records(weekly_records_df)
     all_records_df = bf_controller.get_all_records_from_db(db)
     all_records_maximums_df = bf_controller.get_max_all_records(all_records_df)
+    
     webpage += """
 <script>
 $(document).ready(function() {
@@ -91,6 +94,13 @@ $('#apg').click(function() {
   });
 
 $('#bf_table_all_weekly_records').DataTable({
+             "order" : [[0,"desc"]],
+             paging: false,
+             bFilter: false,
+             bInfo: false
+         });
+
+$('#bf_table_ace').DataTable({
              "order" : [[0,"desc"]],
              paging: false,
              bFilter: false,
@@ -127,6 +137,32 @@ $('#bf_table2').DataTable({
 <h2><a href="#" id="apg">Stats</a></h2>
 <div id="animate" class="invis"><img src="static/pat_moar.jpg"></div>
 """
+    webpage += """
+<h3>Best Squad</h3>
+<table id="bf_table_ace" class="display text-right" cellspace="0">
+<thead>
+<tr>
+"""
+    display_fields=["#", "Week", "5 Top Contributors", "Total Top Squads", "Total Games"]
+    webpage += '\n'.join(["<th>" + x + "</th>" for x in display_fields])
+    webpage += "</tr>\n"
+    webpage += "</thead>\n"
+    webpage += "<tfoot>\n"
+    webpage += '\n'.join(["<th>" + x + "</th>" for x in display_fields])
+    webpage += "</tr>\n"
+    webpage += "</tfoot>\n"
+    webpage += "<tbody>\n"
+    for i, row in enumerate(ace_squads_df.itertuples()):
+        cur_date=bft.get_date_from_date_int(row.date)
+        webpage += "<tr>\n"
+        webpage += "<td>" + str(i) + "</td>\n"
+        webpage += "<td>" + cur_date.strftime("%B %d") + "</td>\n"
+        webpage += "<td>" + row.top_contributors + "</td>\n"
+        webpage += "<td"+check_highlight(row.total_top, bf_controller.get_max_squads_total_top(ace_squads_df)) +">" + str(row.total_top) + "</td>\n"
+        webpage += "<td>" + str(row.total_games) + "</td>\n"
+        webpage += "</tr>\n"
+    webpage += "</tbody>\n</table>\n"
+        
     webpage += """
 <h3>Scoreboard <small>(best in a single game)</small></h3>
 <table id="bf_table_all_weekly_records" class="display text-right" cellspace="0" width="600px" style="margin: 0px">
