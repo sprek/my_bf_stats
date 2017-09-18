@@ -181,24 +181,25 @@ def get_squad_stats(list_of_stats, db):
     user_stats_dict: key = user name, value = list of Stats
     returns a squad object for the given list of stats
     """
-    round_window_min=5 # num minutes between entries
+    round_window_min=10 # num minutes between entries
     rounds=defaultdict(list)
     squad_contributors=Counter()
     total_ace=0
     total_rounds=0
 
-    for user in list_of_stats:
+    for user in sorted(list_of_stats.keys()):
         if not list_of_stats[user]:
             continue
         for stat in list_of_stats[user]:
             did_find=False
-            for round_date in rounds:
+            for round_date in sorted(rounds.keys()):
                 if bft.subtract_times_as_timedelta(round_date, stat.date).seconds <= round_window_min*60:
                     rounds[round_date].append(stat)
                     did_find = True
             if not did_find:
                 rounds[stat.date].append(stat)
-    for round_date in rounds:
+
+    for round_date in sorted(rounds.keys()):
         stats_list=rounds[round_date]
         if len(stats_list) >= 3:
             num_ace=0
@@ -220,6 +221,7 @@ def get_squad_stats(list_of_stats, db):
                             top_contributors=', '.join([unescape_spaces("{} ({})".format(x[0], x[1])) for x in squad_contributors.most_common(5)]),
                             total_top=total_ace,
                             total_games=total_rounds)
+
     return cur_squad
 
 #def calculate_all_weekly_ace_squads(db):
