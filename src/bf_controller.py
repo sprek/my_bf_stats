@@ -225,8 +225,19 @@ def get_squad_stats(list_of_stats, db):
 
     if len(rounds) == 0:
         return squad.Squad(date=0, top_contributors="", total_top=0, total_games=0)
+    common_tuples=squad_contributors.most_common(5)
+    if common_tuples and len(common_tuples) == 5:
+        cnt=6
+        last_val=common_tuples[-1][1]
+        while len(squad_contributors.most_common(cnt)) == cnt:
+            if(squad_contributors.most_common(cnt)[-1][1] == last_val):
+                common_tuples.append(squad_contributors.most_common(cnt)[-1])
+            else:
+                break
+            cnt += 1
+            #top_contributors=', '.join([unescape_spaces("{} ({})".format(x[0], x[1])) for x in squad_contributors.most_common(5)]),
     cur_squad = squad.Squad(date=0,
-                            top_contributors=', '.join([unescape_spaces("{} ({})".format(x[0], x[1])) for x in squad_contributors.most_common(5)]),
+                            top_contributors=', '.join([unescape_spaces("{} ({})".format(x[0], x[1])) for x in common_tuples]),
                             total_top=total_ace,
                             total_games=total_rounds)
 
