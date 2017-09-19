@@ -1,4 +1,4 @@
-#import pdb
+import pdb
 import requests
 from bs4 import BeautifulSoup
 from database import stats, records, squad
@@ -181,24 +181,32 @@ def get_squad_stats(list_of_stats, db):
     user_stats_dict: key = user name, value = list of Stats
     returns a squad object for the given list of stats
     """
-    round_window_min=10 # num minutes between entries
-    rounds=defaultdict(list)
+    round_window_min=10  # num minutes between entries
+    rounds=defaultdict(set)
     squad_contributors=Counter()
     total_ace=0
     total_rounds=0
 
-    for user in sorted(list_of_stats.keys()):
+    # get all stats that are within 10 min of eachother
+
+    all_stats=[]
+    for user in list_of_stats:
         if not list_of_stats[user]:
             continue
-        for stat in list_of_stats[user]:
-            did_find=False
-            for round_date in sorted(rounds.keys()):
-                if bft.subtract_times_as_timedelta(round_date, stat.date).seconds <= round_window_min*60:
-                    rounds[round_date].append(stat)
-                    did_find = True
-            if not did_find:
-                rounds[stat.date].append(stat)
-
+        all_stats.extend(list_of_stats[user])
+    #all_stats = [x for x in all_stats_tmp]
+    all_stats = sorted(all_stats, key=lambda x: x.date)
+    cnt=0
+    for i,stat in enumerate(all_stats):
+        if i == len(all_stats)-1:
+            continue
+        if bft.subtract_times_as_timedelta(all_stats[i+1].date, stat.date).seconds <= round_window_min*60:
+            rounds[cnt].add(all_stats[i])
+            rounds[cnt].add(all_stats[i+1])
+        else:
+            cnt += 1
+            rounds[cnt].add(all_stats[i+1])
+            
     for round_date in sorted(rounds.keys()):
         stats_list=rounds[round_date]
         if len(stats_list) >= 3:
