@@ -209,19 +209,18 @@ def get_squad_stats(list_of_stats, db):
             
     for round_date in sorted(rounds.keys()):
         stats_list=rounds[round_date]
-        if len(stats_list) >= 3:
-            num_ace=0
-            tmp_squad_contrib=[]
-            for stat in stats_list:
-                last = stats.get_last_stat_before_date(stat.user, stat.date, db)
-                if last and stat.ace_squad - last.ace_squad > 0:
-                    num_ace += 1
-                    tmp_squad_contrib.append(stat.user)
-            if num_ace >= 3:
-                for user in tmp_squad_contrib:
-                    squad_contributors.update([user])
-                total_ace += 1
-            total_rounds += 1
+        num_ace=0
+        tmp_squad_contrib=[]
+        for stat in stats_list:
+            last = stats.get_last_stat_before_date(stat.user, stat.date, db)
+            if last and stat.ace_squad - last.ace_squad > 0:
+                num_ace += 1
+                tmp_squad_contrib.append(stat.user)
+        if num_ace >= 1:
+            for user in tmp_squad_contrib:
+                squad_contributors.update([user])
+            total_ace += 1
+        total_rounds += 1
 
     if len(rounds) == 0:
         return squad.Squad(date=0, top_contributors="", total_top=0, total_games=0)
